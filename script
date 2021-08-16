@@ -1,0 +1,1 @@
+python business.py --image_dir="imgs/test/" --use_angle_cls=True --use_space_char=True
