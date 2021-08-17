@@ -358,6 +358,9 @@ class OCR:
 
         return r
 
+    def _timestamp(self):
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
 
 if __name__ == "__main__":
     ocr = OCR()
