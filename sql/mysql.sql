@@ -1,4 +1,7 @@
 
+CREATE DATABASE IF NOT EXISTS `ocr` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `ocr`;
+
 CREATE TABLE IF NOT EXISTS `tb_ocr_record_log` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `ocr_log_id` bigint(20) DEFAULT NULL COMMENT '记录id',
@@ -12,7 +15,8 @@ CREATE TABLE IF NOT EXISTS `tb_ocr_record_log` (
   `created_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='OCR识别记录存储表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+PARTITION BY HASH (MOD(id, 100)) PARTITIONS 100;
 
 
 CREATE TABLE IF NOT EXISTS `tbl_template` (
@@ -30,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `tbl_template` (
   `field5` varchar(30) DEFAULT '',
   `field6` int(11) DEFAULT '0',
   `type` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 INSERT INTO `tbl_template` (`template_id`, `name1`, `name2`, `field1`, `position1`, `field2`, `position2`, `field3`, `position3`, `field4`, `position4`, `field5`, `field6`, `type`) VALUES

@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument("--template_id", type=int, default=1)
 
     # params for text detector
-    parser.add_argument("--image_dir", type=str)
+    parser.add_argument("--image_dir", type=str, default='imgs/test')
     parser.add_argument("--det_algorithm", type=str, default='DB')
     parser.add_argument("--det_model_dir", type=str)
     parser.add_argument("--det_limit_side_len", type=float, default=960)
@@ -79,7 +79,7 @@ def parse_args():
     parser.add_argument("--e2e_pgnet_mode", type=str, default='fast')
 
     # params for text classifier
-    parser.add_argument("--use_angle_cls", type=str2bool, default=False)
+    parser.add_argument("--use_angle_cls", type=str2bool, default=True)
     parser.add_argument("--cls_model_dir", type=str)
     parser.add_argument("--cls_image_shape", type=str, default="3, 48, 192")
     parser.add_argument("--label_list", type=list, default=['0', '180'])
