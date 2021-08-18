@@ -1,0 +1,1 @@
+python business.py --image_dir="imgs/test/"
