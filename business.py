@@ -9,17 +9,23 @@ from copy import deepcopy
 import json
 import tools.infer.utility as utility
 from config import template
+import pymysql.cursors
 
 
 class OCR:
 
     def __init__(self):
-        self.con = sqlite3.connect("D:\Workshops\ocr_api\db.sqlite", check_same_thread=False)
-        self.base_dir = "D:\Workshops\ocr_api"
-        self.img_dir = "D:\Workshops\ocr_api\imgs"
-        self.output_dir = "D:\Workshops\ocr_api\output"
+        self.con = sqlite3.connect(".\db.sqlite", check_same_thread=False)
+        self.base_dir = "./"
+        self.img_dir = "./imgs"
+        self.output_dir = "./output"
         self.url_path = "/output"
-
+        self.connection = pymysql.connect(
+                            host='localhost',
+                            user='root',
+                            password='root',
+                            database='ocr',
+                            cursorclass=pymysql.cursors.DictCursor)
 
     def _save_template(self, template):
         df = pd.DataFrame(template)
@@ -198,48 +204,45 @@ class OCR:
         return output
 
     def get_result(self, args):
-
         occ = reg(args)
-
         data = dict()
         for d in occ:
             name, recs, boxes = d
-            name = os.path.basename(name).split('.')[0]
+            name = os.path.basename(name)
             data[name] = zip(recs, boxes)
 
-        tid = args.template_id
-        name1 = template.get(tid)['name1']
-        name2 = template.get(tid)['name2']
-        cur = self.con.cursor()
-        tables = cur.execute("select * from template where name1='%s' and name2='%s'" % (name1, name2))
-        # tables = cur.execute("select * from template where rowid " % (name1, name2))
-        templates = []
-        for table in tables:
-            tmp = {
-                'in': [],
-                'out': []
-            }
-            field1, position1 = table[2], table[3]
-            if position1 > 0:
-                tmp['in'].append((field1, position1))
-            field2, position2 = table[4], table[5]
-            if position2 > 0:
-                tmp['in'].append((field2, position2))
-            field3, position3 = table[6], table[7]
-            if position3 > 0:
-                tmp['in'].append((field3, position3))
-            field4, position4 = table[8], table[9]
-            if position4 > 0:
-                tmp['in'].append((field4, position4))
-            field5, field6, typ = table[10], table[11], table[12]
-            tmp['out'] = [field5, field6, typ]
-            templates.append(tmp)
-        cur.close()
+            tid = name.split('_')[1]
+            with self.connection.cursor() as cursor:
+                sql = "SELECT * FROM tbl_template WHERE `template_id`= '%s'" % tid
+                cursor.execute(sql)
+                result = cursor.fetchall()
+
+                templates = []
+                for table in result:
+                    tmp = {
+                        'in': [],
+                        'out': []
+                    }
+                    field1, position1 = table.get('field1'), table.get('position1')
+                    if position1 > 0:
+                        tmp['in'].append((field1, position1))
+                    field2, position2 = table.get('field2'), table.get('position2')
+                    if position2 > 0:
+                        tmp['in'].append((field2, position2))
+                    field3, position3 = table.get('field3'), table.get('position3')
+                    if position3 > 0:
+                        tmp['in'].append((field3, position3))
+                    field4, position4 = table.get('field4'), table.get('position4')
+                    if position4 > 0:
+                        tmp['in'].append((field4, position4))
+                    field5, field6, typ = table.get('field5'), table.get('field6'), table.get('type')
+                    tmp['out'] = [field5, field6, typ]
+                    templates.append(tmp)
+
 
         x = 0
         output = []
         l = 0
-
         tm = str(time.time()).split('.')[0]
 
         for name, regs in data.items():
@@ -273,6 +276,17 @@ class OCR:
 
         return output
 
+
+    def save_to_db(self, output):
+        with self.connection.cursor() as cursor:
+            # Create a new record
+            sql = "INSERT INTO `tb_ocr_record_log` (`ocr_log_id`,`resident_id`,`parameter_id`,`parameter`,`picture`,`accuracy`,`Identification_time`, `is_delete`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+            for data in output:
+                name = data['name']
+                attrs = name.split('_')
+                for one in data['data']:
+                    cursor.execute(sql, (attrs[2], attrs[0], one['class2'], one['result'], one['img_path'], one['prob'], self._timestamp(), '0'))
+            self.connection.commit()
 
     def save(self, tm, img_name, img):
         draw_img_save = os.path.join(self.output_dir, tm)
@@ -366,3 +380,4 @@ if __name__ == "__main__":
     ocr = OCR()
     args = utility.parse_args()
     output = ocr.get_result(args)
+    ocr.save_to_db(output)
